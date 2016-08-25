@@ -1,0 +1,263 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <style media="screen">
+      pre {
+        background: #333;
+        border: 3px solid #CF0F0F;
+        border-radius: 10px;
+        padding: 15px;
+        color: #FFF;
+      }
+    </style>
+  </head>
+  <body>
+    <h3>CONNECT</h3>
+    <form id="connect-info-form">
+      <div><label for="host">Host:</label><input type="text" id="host"></div>
+      <div><label for="port">Port:</label><input type="text" id="port"></div>
+      <div>
+        <label for="accepted-protocol">Accepted Protocol:</label>
+        <input type="text" id="accepted-protocol">
+      </div>
+      <div>
+        <button type="submit">connect</button>
+      </div>
+    </form>
+
+    <div id="connect-after-container" style="display: none;">
+      <pre id="status"></pre>
+      <hr>
+      <h3>Send</h3>
+      <button type="button" name="button" id="order-answer">answer</button>
+      <button type="button" name="button" id="order-hangup">hangup</button>
+      <button type="button" name="button" id="order-makecall">makecall: 01029987945</button>
+      <form id="order-custom-form">
+        <label for="msg-body">메세지 바디</label>
+        <textarea id="msg-body" cols="25" rows="5"></textarea>
+        <button type="submit">send</button>
+      </form>
+      <hr>
+      <h1>서버에서 받은 event</h1>
+      <h3>RINGDETECT</h3>
+      <pre id="status-9101">RINGDETECT event가 없습니다.</pre>
+      <h3>BRIDGE</h3>
+      <pre id="status-9102">BRIDGE event가 없습니다.</pre>
+      <h3>HANGUP</h3>
+      <pre id="status-9103">HANGUP event가 없습니다.</pre>
+      <h3>CUSTOM</h3>
+      <pre id="custom-message"></pre>
+    </div>
+    <!--  서버로부터 요청보내는 명령  -->
+    <!-- <button type="button" name="button" id="request-to-emit-forced-ringetect">test - ringdetect</button>
+    <button type="button" name="button" id="request-to-emit-forced-bridge">test - bridge</button>
+    <button type="button" name="button" id="request-to-emit-forced-hangup">test - hangup</button> -->
+
+    <script>
+      (function () {
+        var socket;
+        var wsProtocol = location.protocol.replace('http', 'ws');
+        document.getElementById('connect-info-form').addEventListener('submit', function(e) {
+          e.preventDefault();
+
+          var host = document.getElementById('host').value;
+          var port = document.getElementById('port').value;
+          var acceptedProtocol = document.getElementById('accepted-protocol').value;
+
+          if (socket != null) {
+            socket.close();
+          }
+          if acceptedProtocol === '' {
+            acceptedProtocol = undefined;
+          }
+
+          socket = new WebSocket(wsProtocol + '//' + host + ':' + port, acceptedProtocol);
+
+          socket.onopen = function (e) {
+            console.log(e);
+            this.send('Say Hello!');
+            var status = document.getElementById("status");
+            status.textContent = 'connect success';
+            document.getElementById('connect-after-container').style.display = 'block';
+          };
+
+          socket.onclose = function (e) {
+            console.log(e);
+            this.send('Say Goodbye!');
+          };
+
+          socket.onmessage = function (event) {
+            var msg = event.data;
+            console.log(msg);
+            try {
+              obj = JSON.parse(msg);
+              var status = document.getElementById("status-" + obj.EventType);
+
+              if (status) {
+                status.textContent =  event.data;
+              } else {
+                document.getElementById("custom-message").textContent = event.data;
+              }
+            } catch (e) {
+              document.getElementById("custom-message").textContent = event.data;
+              console.error(e);
+            }
+          };
+        });
+
+        document.getElementById('order-answer').addEventListener('click', function (e) {
+          e.preventDefault();
+          if (socket == null) {
+            console.error('socket is null');
+            return;
+          }
+          socket.send(JSON.stringify({EventType: '9001'}));
+        });
+        document.getElementById('order-hangup').addEventListener('click', function (e) {
+          e.preventDefault();
+          if (socket == null) {
+            console.error('socket is null');
+            return;
+          }
+          socket.send(JSON.stringify({EventType: '9002'}));
+        });
+        document.getElementById('order-makecall').addEventListener('click', function (e) {
+          e.preventDefault();
+          if (socket == null) {
+            console.error('socket is null');
+            return;
+          }
+          socket.send(JSON.stringify({EventType: '9003', Phone: '01029987945'}));
+        });
+        document.getElementById('order-custom-form').addEventListener('submit', function (e) {
+          e.preventDefault();
+          if (socket == null) {
+            console.error('socket is null');
+            return;
+          }
+          socket.send(document.getElementById('msg-body').value);
+        });
+      })();
+
+
+
+      // var setSocket = (function () {
+      //   var socket, conncetTryCount;
+      //
+      //   function initSocket (host, port, callback) {
+      //     conncetTryCount = 0
+      //
+      //     if (socket != null) {
+      //       socket.disconnect();
+      //     }
+      //
+      //     initEventListener();
+      //     addEventSocket();
+      //     callback();
+      //   }
+      //
+      //   function orderAnswer () {
+      //     socket.emit('9001', {EventType: '9001'});
+      //   }
+      //   function orderHangup () {
+      //     socket.emit('9002', {EventType: '9002'});
+      //   }
+      //   function orderMakecall() {
+      //     socket.emit('9003', {EventType: '9003', Phone: '01029987945'});
+      //   }
+      //
+      //   function orderCustom (e) {
+      //     e.preventDefault();
+      //     var msgType = document.getElementById('msg-type').value;
+      //     try {
+      //       console.log(document.getElementById('msg-body').value);
+      //       var msg = JSON.parse(document.getElementById('msg-body').value);
+      //       socket.emit(msgType, msg);
+      //     } catch (e) {
+      //       alert('json parsing error');
+      //       console.error(e);
+      //     }
+      //     return false;
+      //   }
+      //
+      //   function initEventListener () {
+      //     var eOrderAnswer = document.getElementById('order-answer'),
+      //         eOrderHangup = document.getElementById('order-hangup'),
+      //         eOrderMakecall = document.getElementById('order-makecall'),
+      //         eOrderCustom = document.getElementById('order-custom-form');
+      //     eOrderAnswer.removeEventListener('click', orderAnswer);
+      //     eOrderHangup.removeEventListener('click', orderHangup);
+      //     eOrderMakecall.removeEventListener('click', orderMakecall);
+      //     eOrderCustom.removeEventListener('submit', orderCustom);
+      //
+      //     eOrderAnswer.addEventListener('click', orderAnswer);
+      //     eOrderHangup.addEventListener('click', orderHangup);
+      //     eOrderMakecall.addEventListener('click', orderMakecall);
+      //     eOrderCustom.addEventListener('submit', orderCustom);
+      //   }
+      //
+      //   function addEventSocket () {
+      //     socket.on('connect_error', function(){
+      //       var status = document.getElementById("status");
+      //       status.textContent = 'connect fail. fail count: ' + (++conncetTryCount);
+      //     });
+      //
+      //     socket.on('connect', function(){
+      //       var status = document.getElementById("status");
+      //       status.textContent = 'connect success';
+      //     });
+      //
+      //     socket.on('9101', function (data) {
+      //       console.log('9101', 'JSON_ORDER_ANSWER', data);
+      //       var status = document.getElementById("status-9101");
+      //       status.textContent =  JSON.stringify(data);
+      //     });
+      //     socket.on('9102', function (data) {
+      //         console.log('9102', 'JSON_ORDER_BRIDGE', data);
+      //         var status = document.getElementById("status-9102");
+      //         status.textContent =  JSON.stringify(data);
+      //     });
+      //     socket.on('9103', function (data) {
+      //         console.log('9103', 'JSON_ORDER_HANGUP', data);
+      //         var status = document.getElementById("status-9103");
+      //         status.textContent =  JSON.stringify(data);
+      //     });
+      //   }
+      //   return initSocket;
+      // })();
+      //
+      // document.getElementById('connect-info-form').addEventListener('submit', function (e) {
+      //   e.preventDefault();
+      //   setSocket(document.getElementById('host').value, document.getElementById('port').value, function () {
+      //     document.getElementById('connect-after-container').style.display = 'block';
+      //   });
+      // });
+      // function requestToEmitForced (eventType) {
+      //   var data = {
+      //     9101: '01029987945',
+      //     9102: '01029987945',
+      //     9103: 'filepath/filename'
+      //   }
+      //   socket.emit('emit-forced', {
+      //     event: eventType,
+      //     data: {
+      //       EventType: eventType,
+      //       Phone: '01029987945',
+      //       Data: data[eventType],
+      //       CallType: 1
+      //     }
+      //   });
+      // }
+
+      // document.getElementById('request-to-emit-forced-ringetect').addEventListener('click', function() {
+      //   requestToEmitForced('9101')
+      // });
+      // document.getElementById('request-to-emit-forced-bridge').addEventListener('click', function() {
+      //   requestToEmitForced('9102')
+      // });
+      // document.getElementById('request-to-emit-forced-hangup').addEventListener('click', function() {
+      //   requestToEmitForced('9103')
+      // });
+    </script>
+  </body>
+</html>
