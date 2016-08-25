@@ -1,5 +1,7 @@
 var WebSocketServer = require('websocket').server;
 var https = require('https');
+var fs = require('fs');
+
 var options = {
   key: fs.readFileSync('your-key-path'),
   cert: fs.readFileSync('your-cert-path')
