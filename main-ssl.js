@@ -1,18 +1,21 @@
 var WebSocketServer = require('websocket').server;
-var http = require('http');
-
-var server = http.createServer(function(request, response) {
+var https = require('https');
+var options = {
+  key: fs.readFileSync('your-key-path'),
+  cert: fs.readFileSync('your-cert-path')
+};
+var server = https.createServer(options, function(request, response) {
     console.log((new Date()) + ' Received request for ' + request.url);
     response.writeHead(404);
     response.end();
 });
 
-server.listen(8080, function() {
-    console.log((new Date()) + ' Server is listening on port 8080');
+server.listen(8443, function() {
+    console.log((new Date()) + ' Server is listening on port 8443');
 });
 
 wsServer = new WebSocketServer({
-    httpServer: server,
+    httpsServer: server,
     // You should not use autoAcceptConnections for production
     // applications, as it defeats all standard cross-origin protection
     // facilities built into the protocol and the browser.  You should
@@ -52,40 +55,3 @@ wsServer.on('request', function(request) {
         console.log((new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected.');
     });
 });
-
-
-// var app = require('http').createServer(handler)
-// var io = require('socket.io')(app);
-// var fs = require('fs');
-//
-// app.listen(3915);
-//
-// function handler (req, res) {
-//   fs.readFile(__dirname + '/index.html',
-//   function (err, data) {
-//     if (err) {
-//       res.writeHead(500);
-//       return res.end('Error loading index.html');
-//     }
-//
-//     res.writeHead(200);
-//     res.end(data);
-//   });
-// }
-//
-// io.on('connection', function (socket) {
-//   socket.on('9001', function (data) {
-//       console.log('9001', 'JSON_ORDER_ANSWER', data);
-//   });
-//   socket.on('9002', function (data) {
-//       console.log('9002', 'JSON_ORDER_HANGUP', data);
-//   });
-//   socket.on('9003', function (data) {
-//       console.log('9003', 'JSON_ORDER_MAKECALL', data);
-//   });
-//
-//   socket.on('emit-forced', function (res) {
-//     console.log('emit-forced', res);
-//     socket.emit(res.event, res.data);
-//   });
-// });
