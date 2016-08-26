@@ -10,6 +10,7 @@
         color: #FFF;
       }
     </style>
+    <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
   </head>
   <body>
     <h3>CONNECT</h3>
@@ -33,6 +34,7 @@
       <button type="button" name="button" id="order-hangup">hangup</button>
       <button type="button" name="button" id="order-makecall">makecall: 01029987945</button>
       <form id="order-custom-form">
+        <label for="msg-type">메세지 타입</label><input type="text" id="msg-type">
         <label for="msg-body">메세지 바디</label>
         <textarea id="msg-body" cols="25" rows="5"></textarea>
         <button type="submit">send</button>
@@ -54,200 +56,200 @@
     <button type="button" name="button" id="request-to-emit-forced-hangup">test - hangup</button> -->
 
     <script>
-      (function () {
-        var socket;
-        var wsProtocol = location.protocol.replace('http', 'ws');
-        document.getElementById('connect-info-form').addEventListener('submit', function(e) {
-          e.preventDefault();
-
-          var host = document.getElementById('host').value;
-          var port = document.getElementById('port').value;
-          var acceptedProtocol = document.getElementById('accepted-protocol').value;
-
-          if (socket != null) {
-            socket.close();
-          }
-          if (acceptedProtocol === '') {
-            acceptedProtocol = undefined;
-          }
-
-          socket = new WebSocket(wsProtocol + '//' + host + ':' + port, acceptedProtocol);
-
-          socket.onopen = function (e) {
-            console.log(e);
-            this.send('Say Hello!');
-            var status = document.getElementById("status");
-            status.textContent = 'connect success';
-            document.getElementById('connect-after-container').style.display = 'block';
-          };
-
-          socket.onclose = function (e) {
-            console.log(e);
-            this.send('Say Goodbye!');
-          };
-
-          socket.onmessage = function (event) {
-            var msg = event.data;
-            console.log(msg);
-            try {
-              obj = JSON.parse(msg);
-              var status = document.getElementById("status-" + obj.EventType);
-
-              if (status) {
-                status.textContent =  event.data;
-              } else {
-                document.getElementById("custom-message").textContent = event.data;
-              }
-            } catch (e) {
-              document.getElementById("custom-message").textContent = event.data;
-              console.error(e);
-            }
-          };
-        });
-
-        document.getElementById('order-answer').addEventListener('click', function (e) {
-          e.preventDefault();
-          if (socket == null) {
-            console.error('socket is null');
-            return;
-          }
-          socket.send(JSON.stringify({EventType: '9001'}));
-        });
-        document.getElementById('order-hangup').addEventListener('click', function (e) {
-          e.preventDefault();
-          if (socket == null) {
-            console.error('socket is null');
-            return;
-          }
-          socket.send(JSON.stringify({EventType: '9002'}));
-        });
-        document.getElementById('order-makecall').addEventListener('click', function (e) {
-          e.preventDefault();
-          if (socket == null) {
-            console.error('socket is null');
-            return;
-          }
-          socket.send(JSON.stringify({EventType: '9003', Phone: '01029987945'}));
-        });
-        document.getElementById('order-custom-form').addEventListener('submit', function (e) {
-          e.preventDefault();
-          if (socket == null) {
-            console.error('socket is null');
-            return;
-          }
-          socket.send(document.getElementById('msg-body').value);
-        });
-      })();
-
-
-
-      // var setSocket = (function () {
-      //   var socket, conncetTryCount;
+      // (function () {
+      //   var socket;
+      //   var wsProtocol = location.protocol.replace('http', 'ws');
+      //   document.getElementById('connect-info-form').addEventListener('submit', function(e) {
+      //     e.preventDefault();
       //
-      //   function initSocket (host, port, callback) {
-      //     conncetTryCount = 0
+      //     var host = document.getElementById('host').value;
+      //     var port = document.getElementById('port').value;
+      //     var acceptedProtocol = document.getElementById('accepted-protocol').value;
       //
       //     if (socket != null) {
-      //       socket.disconnect();
+      //       socket.close();
+      //     }
+      //     if (acceptedProtocol === '') {
+      //       acceptedProtocol = undefined;
       //     }
       //
-      //     initEventListener();
-      //     addEventSocket();
-      //     callback();
-      //   }
+      //     socket = new WebSocket(wsProtocol + '//' + host + ':' + port, acceptedProtocol);
       //
-      //   function orderAnswer () {
-      //     socket.emit('9001', {EventType: '9001'});
-      //   }
-      //   function orderHangup () {
-      //     socket.emit('9002', {EventType: '9002'});
-      //   }
-      //   function orderMakecall() {
-      //     socket.emit('9003', {EventType: '9003', Phone: '01029987945'});
-      //   }
-      //
-      //   function orderCustom (e) {
-      //     e.preventDefault();
-      //     var msgType = document.getElementById('msg-type').value;
-      //     try {
-      //       console.log(document.getElementById('msg-body').value);
-      //       var msg = JSON.parse(document.getElementById('msg-body').value);
-      //       socket.emit(msgType, msg);
-      //     } catch (e) {
-      //       alert('json parsing error');
-      //       console.error(e);
-      //     }
-      //     return false;
-      //   }
-      //
-      //   function initEventListener () {
-      //     var eOrderAnswer = document.getElementById('order-answer'),
-      //         eOrderHangup = document.getElementById('order-hangup'),
-      //         eOrderMakecall = document.getElementById('order-makecall'),
-      //         eOrderCustom = document.getElementById('order-custom-form');
-      //     eOrderAnswer.removeEventListener('click', orderAnswer);
-      //     eOrderHangup.removeEventListener('click', orderHangup);
-      //     eOrderMakecall.removeEventListener('click', orderMakecall);
-      //     eOrderCustom.removeEventListener('submit', orderCustom);
-      //
-      //     eOrderAnswer.addEventListener('click', orderAnswer);
-      //     eOrderHangup.addEventListener('click', orderHangup);
-      //     eOrderMakecall.addEventListener('click', orderMakecall);
-      //     eOrderCustom.addEventListener('submit', orderCustom);
-      //   }
-      //
-      //   function addEventSocket () {
-      //     socket.on('connect_error', function(){
-      //       var status = document.getElementById("status");
-      //       status.textContent = 'connect fail. fail count: ' + (++conncetTryCount);
-      //     });
-      //
-      //     socket.on('connect', function(){
+      //     socket.onopen = function (e) {
+      //       console.log(e);
+      //       this.send('Say Hello!');
       //       var status = document.getElementById("status");
       //       status.textContent = 'connect success';
-      //     });
+      //       document.getElementById('connect-after-container').style.display = 'block';
+      //     };
       //
-      //     socket.on('9101', function (data) {
-      //       console.log('9101', 'JSON_ORDER_ANSWER', data);
-      //       var status = document.getElementById("status-9101");
-      //       status.textContent =  JSON.stringify(data);
-      //     });
-      //     socket.on('9102', function (data) {
-      //         console.log('9102', 'JSON_ORDER_BRIDGE', data);
-      //         var status = document.getElementById("status-9102");
-      //         status.textContent =  JSON.stringify(data);
-      //     });
-      //     socket.on('9103', function (data) {
-      //         console.log('9103', 'JSON_ORDER_HANGUP', data);
-      //         var status = document.getElementById("status-9103");
-      //         status.textContent =  JSON.stringify(data);
-      //     });
-      //   }
-      //   return initSocket;
-      // })();
+      //     socket.onclose = function (e) {
+      //       console.log(e);
+      //       this.send('Say Goodbye!');
+      //     };
       //
-      // document.getElementById('connect-info-form').addEventListener('submit', function (e) {
-      //   e.preventDefault();
-      //   setSocket(document.getElementById('host').value, document.getElementById('port').value, function () {
-      //     document.getElementById('connect-after-container').style.display = 'block';
+      //     socket.onmessage = function (event) {
+      //       var msg = event.data;
+      //       console.log(msg);
+      //       try {
+      //         obj = JSON.parse(msg);
+      //         var status = document.getElementById("status-" + obj.EventType);
+      //
+      //         if (status) {
+      //           status.textContent =  event.data;
+      //         } else {
+      //           document.getElementById("custom-message").textContent = event.data;
+      //         }
+      //       } catch (e) {
+      //         document.getElementById("custom-message").textContent = event.data;
+      //         console.error(e);
+      //       }
+      //     };
       //   });
-      // });
-      // function requestToEmitForced (eventType) {
-      //   var data = {
-      //     9101: '01029987945',
-      //     9102: '01029987945',
-      //     9103: 'filepath/filename'
-      //   }
-      //   socket.emit('emit-forced', {
-      //     event: eventType,
-      //     data: {
-      //       EventType: eventType,
-      //       Phone: '01029987945',
-      //       Data: data[eventType],
-      //       CallType: 1
+      //
+      //   document.getElementById('order-answer').addEventListener('click', function (e) {
+      //     e.preventDefault();
+      //     if (socket == null) {
+      //       console.error('socket is null');
+      //       return;
       //     }
+      //     socket.send(JSON.stringify({EventType: '9001'}));
       //   });
-      // }
+      //   document.getElementById('order-hangup').addEventListener('click', function (e) {
+      //     e.preventDefault();
+      //     if (socket == null) {
+      //       console.error('socket is null');
+      //       return;
+      //     }
+      //     socket.send(JSON.stringify({EventType: '9002'}));
+      //   });
+      //   document.getElementById('order-makecall').addEventListener('click', function (e) {
+      //     e.preventDefault();
+      //     if (socket == null) {
+      //       console.error('socket is null');
+      //       return;
+      //     }
+      //     socket.send(JSON.stringify({EventType: '9003', Phone: '01029987945'}));
+      //   });
+      //   document.getElementById('order-custom-form').addEventListener('submit', function (e) {
+      //     e.preventDefault();
+      //     if (socket == null) {
+      //       console.error('socket is null');
+      //       return;
+      //     }
+      //     socket.send(document.getElementById('msg-body').value);
+      //   });
+      // })();
+
+
+
+      var setSocket = (function () {
+        var socket, conncetTryCount;
+
+        function initSocket (host, port, callback) {
+          conncetTryCount = 0
+
+          if (socket != null) {
+            socket.disconnect();
+          }
+          socket = io('//' + host + ':' + port);
+          initEventListener();
+          addEventSocket();
+          callback();
+        }
+
+        function orderAnswer () {
+          socket.emit('9001', {EventType: '9001'});
+        }
+        function orderHangup () {
+          socket.emit('9002', {EventType: '9002'});
+        }
+        function orderMakecall() {
+          socket.emit('9003', {EventType: '9003', Phone: '01029987945'});
+        }
+
+        function orderCustom (e) {
+          e.preventDefault();
+          var msgType = document.getElementById('msg-type').value;
+          try {
+            console.log(document.getElementById('msg-body').value);
+            var msg = JSON.parse(document.getElementById('msg-body').value);
+            socket.emit(msgType, msg);
+          } catch (e) {
+            alert('json parsing error');
+            console.error(e);
+          }
+          return false;
+        }
+
+        function initEventListener () {
+          var eOrderAnswer = document.getElementById('order-answer'),
+              eOrderHangup = document.getElementById('order-hangup'),
+              eOrderMakecall = document.getElementById('order-makecall'),
+              eOrderCustom = document.getElementById('order-custom-form');
+          eOrderAnswer.removeEventListener('click', orderAnswer);
+          eOrderHangup.removeEventListener('click', orderHangup);
+          eOrderMakecall.removeEventListener('click', orderMakecall);
+          eOrderCustom.removeEventListener('submit', orderCustom);
+
+          eOrderAnswer.addEventListener('click', orderAnswer);
+          eOrderHangup.addEventListener('click', orderHangup);
+          eOrderMakecall.addEventListener('click', orderMakecall);
+          eOrderCustom.addEventListener('submit', orderCustom);
+        }
+
+        function addEventSocket () {
+          socket.on('connect_error', function(){
+            var status = document.getElementById("status");
+            status.textContent = 'connect fail. fail count: ' + (++conncetTryCount);
+          });
+
+          socket.on('connect', function(){
+            var status = document.getElementById("status");
+            status.textContent = 'connect success';
+          });
+
+          socket.on('9101', function (data) {
+            console.log('9101', 'JSON_ORDER_ANSWER', data);
+            var status = document.getElementById("status-9101");
+            status.textContent =  JSON.stringify(data);
+          });
+          socket.on('9102', function (data) {
+              console.log('9102', 'JSON_ORDER_BRIDGE', data);
+              var status = document.getElementById("status-9102");
+              status.textContent =  JSON.stringify(data);
+          });
+          socket.on('9103', function (data) {
+              console.log('9103', 'JSON_ORDER_HANGUP', data);
+              var status = document.getElementById("status-9103");
+              status.textContent =  JSON.stringify(data);
+          });
+        }
+        return initSocket;
+      })();
+
+      document.getElementById('connect-info-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        setSocket(document.getElementById('host').value, document.getElementById('port').value, function () {
+          document.getElementById('connect-after-container').style.display = 'block';
+        });
+      });
+      function requestToEmitForced (eventType) {
+        var data = {
+          9101: '01029987945',
+          9102: '01029987945',
+          9103: 'filepath/filename'
+        }
+        socket.emit('emit-forced', {
+          event: eventType,
+          data: {
+            EventType: eventType,
+            Phone: '01029987945',
+            Data: data[eventType],
+            CallType: 1
+          }
+        });
+      }
 
       // document.getElementById('request-to-emit-forced-ringetect').addEventListener('click', function() {
       //   requestToEmitForced('9101')
