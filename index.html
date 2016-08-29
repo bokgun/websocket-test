@@ -13,14 +13,15 @@
     <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
   </head>
   <body>
+    <div>
+      <audio controls preload="metadata">
+        <source src="file:///Users/bokgun/Workspace/socket-test/test.mp3" type="audio/mpeg">
+      </audio>
+    </div>
     <h3>CONNECT</h3>
     <form id="connect-info-form">
       <div><label for="host">Host:</label><input type="text" id="host"></div>
       <div><label for="port">Port:</label><input type="text" id="port"></div>
-      <div>
-        <label for="accepted-protocol">Accepted Protocol:</label>
-        <input type="text" id="accepted-protocol">
-      </div>
       <div>
         <button type="submit">connect</button>
       </div>
